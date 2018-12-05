@@ -5,11 +5,12 @@ import os
 
 class CrosswordApp(wx.Frame):
     def __init__(self, parent, title, width, height):
-        wx.Frame.__init__(self, parent, title = title, size = (500 + 5 * width, 500 + 5 * height))
+        wx.Frame.__init__(self, parent, title = title, size = (500, 500))
         self.width = width
         self.height = height
-        self.vocabulary = ""
+        self.vocabulary = "sources/ruwords.txt"
         self.solution = None
+        self.current_geom = None
         self.init_widgets()
         self.init_menu()
         self.Centre()
@@ -17,21 +18,23 @@ class CrosswordApp(wx.Frame):
 
     def init_menu(self):
         menu_bar = wx.MenuBar()
-        saveMenu = wx.Menu()
-        applyItem = saveMenu.Append(wx.ID_APPLY, 'Apply geometry', 'Saves created crossword geometry')
-        solveItem = saveMenu.Append(wx.ID_CONVERT, 'Solve', 'Makes crossword solution')
-        showItem = saveMenu.Append(wx.ID_PASTE, 'Show', 'Shows crossword solution')
-        clearItem = saveMenu.Append(wx.ID_CLEAR, 'Clear board', 'Clears the board')
-        chooseVocItem = saveMenu.Append(wx.ID_EDIT, 'Choose vocabulary', 'Chooses vocabulary')
-        helpItem = saveMenu.Append(wx.ID_HELP, 'Help', 'Gives instructions')
-        menu_bar.Append(saveMenu, '&Actions')
+        actions_menu = wx.Menu()
+        help_menu = wx.Menu()
+        apply_item = actions_menu.Append(wx.ID_APPLY, 'Apply geometry', 'Saves created crossword geometry')
+        solve_item = actions_menu.Append(wx.ID_CONVERT, 'Solve', 'Makes crossword solution')
+        show_item = actions_menu.Append(wx.ID_PASTE, 'Show', 'Shows crossword solution')
+        clear_item = actions_menu.Append(wx.ID_CLEAR, 'Clear board', 'Clears the board')
+        choose_voc_item = actions_menu.Append(wx.ID_EDIT, 'Choose vocabulary', 'Chooses vocabulary')
+        help_item = help_menu.Append(wx.ID_HELP, 'Help', 'Gives instructions')
+        menu_bar.Append(actions_menu, '&Actions')
+        menu_bar.Append(help_menu, '&Help')
         self.SetMenuBar(menu_bar)
-        self.Bind(wx.EVT_MENU, self.save_geometry, applyItem)
-        self.Bind(wx.EVT_MENU, self.get_help, helpItem)
-        self.Bind(wx.EVT_MENU, self.solve_cross, solveItem)
-        self.Bind(wx.EVT_MENU, self.show_solution, showItem)
-        self.Bind(wx.EVT_MENU, self.clear_board, clearItem)
-        self.Bind(wx.EVT_MENU, self.choose_voc, chooseVocItem)
+        self.Bind(wx.EVT_MENU, self.save_geometry, apply_item)
+        self.Bind(wx.EVT_MENU, self.get_help, help_item )
+        self.Bind(wx.EVT_MENU, self.solve_cross, solve_item)
+        self.Bind(wx.EVT_MENU, self.show_solution, show_item)
+        self.Bind(wx.EVT_MENU, self.clear_board,  clear_item)
+        self.Bind(wx.EVT_MENU, self.choose_voc, choose_voc_item)
 
     def save_geometry(self, event):
         values = []
@@ -39,28 +42,37 @@ class CrosswordApp(wx.Frame):
             values.append([])
             for j in range(len(self.buttons[0])):
                 values[i].append(self.buttons[i][j].GetLabel())
-        with open("current_geom.txt", 'w') as file:
-            result = ""
-            for i in range(len(values)):
-                result += "".join(values[i]) + '\n'
-            file.write(result)
+        self.current_geom = values
+        # with open("sources/current_geom.txt", 'w') as file:
+        #     result = ""
+        #     for i in range(len(values)):
+        #         result += "".join(values[i]) + '\n'
+        #     file.write(result)
 
     def get_help(self, event):
-        text = "Push o buttons, where should be letters,\n" \
-               "0 - for horizontal words\n" \
-               "1 - for vertical words\n" \
-               "2 - for intersections of words."
+        text = '''
+        Push on buttons, where should be letters:
+            0 - for horizontal words
+            1 - for vertical words
+            2 - for intersections of words.
+        Buttons:
+            Apply geometry - saves your current geometry
+            Solve - Makes crossword solution
+            Show - Shows crossword solution
+            Clear board - Clears the crossword board
+            Choose vocabulary - Opens file explorer and let you choose the vocabulary file
+            Help - Gives instructions
+        '''
         dial = wx.MessageDialog(None, text, 'Help', wx.OK)
         dial.ShowModal()
 
     def solve_cross(self, event):
         parser = Parser()
         try:
-            geometry = parser.parse_from_txt("current_geom.txt")
-            graph = parser.parse_to_graf(geometry)
-            self.solution = Crossword.solve(graph, "ruwords.txt")
-        except Exception:
-            dial = wx.MessageDialog(None, "Incorrect geometry", 'Exception', wx.OK)
+            graph = parser.parse_to_graf(self.current_geom)
+            self.solution = Crossword.solve(graph, self.vocabulary)
+        except Exception as e:
+            dial = wx.MessageDialog(None, "Incorrect geometry\n" + str(e), 'Exception', wx.OK)
             dial.ShowModal()
 
     def show_solution(self, event):
@@ -87,35 +99,26 @@ class CrosswordApp(wx.Frame):
         wildcard = "TXT file (*.txt) | *.txt"
         dial = wx.FileDialog(self, message="Choose a vocabulary file",
             defaultDir=os.getcwd(),
-            defaultFile="ruwords.txt",
+            defaultFile="sources/ruwords.txt",
             wildcard=wildcard)
         result = dial.ShowModal()
-        if result == wx.ID_CANCEL or wx.ID_EXIT:
-            self.vocabulary = 'rewords.txt'
-        else:
-            self.vocabulary = str(dial.GetPaths())
+        self.vocabulary = str(dial.GetPaths())
 
     def init_widgets(self):
         self.buttons = []
         panel = wx.Panel(self)
-        hbox = wx.BoxSizer(wx.VERTICAL)
+        sizer = wx.GridSizer(self.width, self.height, 1, 1)
         cells = []
-        fgs = wx.FlexGridSizer(self.width, self.height, 2, 2)
         for i in range(self.height):
             self.buttons.append([])
             for j in range(self.width):
-                crossword_cell = wx.Button(panel, size=(500/self.width, 500/self.height))
+                crossword_cell = wx.Button(panel)
                 crossword_cell.SetLabel("-")
                 crossword_cell.Bind(wx.EVT_BUTTON, self.increase_value)
                 self.buttons[i].append(crossword_cell)
                 cells.append((crossword_cell, 1, wx.EXPAND))
-        for i in range(self.height):
-            fgs.AddGrowableCol(i, 1)
-        for i in range(self.width):
-            fgs.AddGrowableRow(i, 0)
-        fgs.AddMany(cells)
-        hbox.Add(fgs, proportion=1, flag=wx.EXPAND, border=2)
-        panel.SetSizer(hbox)
+        sizer.AddMany(cells)
+        panel.SetSizer(sizer)
 
     def increase_value(self, event):
         button = event.GetEventObject()

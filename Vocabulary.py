@@ -10,7 +10,7 @@ class Vocabulary:
         self.sort_words_by_length()
 
     def get_given_words_from_document(self, document):
-        with open(document) as words:
+        with open(document, encoding='cp1251') as words:
             for line in words:
                 current = list(line)
                 if current[len(current) - 1] == '\n':

@@ -8,7 +8,7 @@ class Parser:
         self.current_node_number = 0
 
     def parse_from_txt(self, file_name):
-        with open(file_name, 'r') as file:
+        with open(file_name, 'r', encoding='cp1251') as file:
             result = []
             for line in file:
                 current = list(line)
@@ -19,6 +19,10 @@ class Parser:
 
 
     def parse_to_graf(self, geometry):
+        if geometry is None or len(geometry) == 0:
+            raise ParseException("Current geometry not initialized or is empty")
+        if not self.check_geometry(geometry):
+            raise ParseException("No words in geometry")
         intersections = defaultdict(lambda : [])
         nodes = []
         self.parse_by_orientation(geometry, nodes, intersections, is_horizontal=True)
@@ -86,5 +90,15 @@ class Parser:
             print("Can't parse geometry")
             exit(1)
 
+    def check_geometry(self, geometry):
+        symbols = set()
+        for i in range(len(geometry)):
+            for j in range(len(geometry[0])):
+                symbols.add(geometry[i][j])
+        return len(symbols) >= 2
+
+
+class ParseException(Exception):
+    pass
 
 
