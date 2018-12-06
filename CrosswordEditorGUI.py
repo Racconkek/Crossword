@@ -1,6 +1,6 @@
 import wx
 from Parser import Parser
-from main import Crossword
+from Solution import Crossword
 import os
 
 class CrosswordEditor(wx.Frame):
