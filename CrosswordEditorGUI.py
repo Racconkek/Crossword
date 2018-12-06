@@ -10,6 +10,7 @@ class CrosswordEditor(wx.Frame):
         self.height = height
         self.vocabulary = "sources/ruwords.txt"
         self.solution = None
+        self.coord_to_word = None
         self.current_geom = None
         self.init_widgets()
         self.init_menu()
@@ -22,7 +23,7 @@ class CrosswordEditor(wx.Frame):
         help_menu = wx.Menu()
         apply_item = actions_menu.Append(wx.ID_APPLY, 'Apply geometry', 'Saves created crossword geometry')
         solve_item = actions_menu.Append(wx.ID_CONVERT, 'Solve', 'Makes crossword solution')
-        show_item = actions_menu.Append(wx.ID_PASTE, 'Show', 'Shows crossword solution')
+        show_item = actions_menu.Append(wx.ID_PASTE, 'Show solution', 'Shows crossword solution')
         clear_item = actions_menu.Append(wx.ID_CLEAR, 'Clear board', 'Clears the board')
         choose_voc_item = actions_menu.Append(wx.ID_EDIT, 'Choose vocabulary', 'Chooses vocabulary')
         help_item = help_menu.Append(wx.ID_HELP, 'Help', 'Gives instructions')
@@ -65,25 +66,13 @@ class CrosswordEditor(wx.Frame):
         parser = Parser()
         try:
             graph = parser.parse_to_graf(self.current_geom)
-            self.solution = Crossword.solve(graph, self.vocabulary)
+            self.solution, self.coord_to_word = Crossword.make_solution(graph, self.vocabulary)
         except Exception as e:
             dial = wx.MessageDialog(None, "Incorrect geometry\n" + str(e), 'Exception', wx.OK)
             dial.ShowModal()
 
     def show_solution(self, event):
-        if self.solution is None or not self.solution:
-            text = "There is No solution"
-        else:
-            vertical = ""
-            horizontal = ""
-            for node, word in self.solution.items():
-                if node.is_horizontal:
-                    horizontal += word + '\n'
-                else:
-                    vertical += word + '\n'
-            text = "\tVertical words:\n" + vertical + "\tHorizontal words:\n" + horizontal
-        dial = wx.MessageDialog(None, text, 'Solution', wx.OK)
-        dial.ShowModal()
+        res = CrosswordResult(self, "Result", self.width, self.height, (self.solution, self.coord_to_word))
 
     def clear_board(self, event):
         for i in range(len(self.buttons)):
@@ -123,6 +112,50 @@ class CrosswordEditor(wx.Frame):
         else:
             label = (int(label) + 1) % 3
         button.SetLabel(str(label))
+
+
+class CrosswordResult(wx.Frame):
+    def __init__(self, parent, title, width, height, result):
+        wx.Frame.__init__(self, parent, title=title, size=(500, 500))
+        self.height = height
+        self.width = width
+        self.template_to_result = result[0]
+        self.coordinates_to_template = result[1]
+        self.init_widgets()
+        self.Centre()
+        self.Show()
+
+    def init_widgets(self):
+        self.buttons = []
+        panel = wx.Panel(self)
+        sizer = wx.GridSizer(self.width, self.height, 1, 1)
+        cells = []
+        for i in range(self.height):
+            self.buttons.append([])
+            for j in range(self.width):
+                crossword_cell = wx.Button(panel)
+                self.buttons[i].append(crossword_cell)
+                cells.append((crossword_cell, 1, wx.EXPAND))
+        sizer.AddMany(cells)
+        panel.SetSizer(sizer)
+        for i in range(self.width):
+            for j in range(self.height):
+                template = self.coordinates_to_template.get((i, j))
+                if template is not None:
+                    self.input_result(template)
+
+    def input_result(self, template):
+        y, x = template.coordinates
+        if template.is_horizontal:
+            counter = 0
+            for i in range(x, x + template.length):
+                self.buttons[y][i].SetLabel(self.template_to_result[template][counter])
+                counter += 1
+        else:
+            counter = 0
+            for i in range(y, y + template.length):
+                self.buttons[i][x].SetLabel(self.template_to_result[template][counter])
+                counter += 1
 
 
 def main():

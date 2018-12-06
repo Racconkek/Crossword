@@ -45,14 +45,14 @@ class Parser:
             first = len(geometry[0])
             second = len(geometry)
 
-            if is_horizontal:
+            if not is_horizontal:
                 first = len(geometry)
                 second = len(geometry[0])
 
-            for x in range(first):
-                for y in range(second):
+            for y in range(second):
+                for x in range(first):
                     position = (y, x)
-                    if is_horizontal:
+                    if not is_horizontal:
                         position = (position[1], position[0])
                     letter = geometry[position[0]][position[1]]
                     if letter == "2":
@@ -68,10 +68,12 @@ class Parser:
                         self.current_node_number += 1
                         current_node.length = length
                         nodes.append(current_node)
+
                     if is_horizontal:
-                        point = (y + 1, x)
+                        point = (y, x + 1)
                     else:
-                        point = (x, y + 1)
+                        point = (x + 1, y)
+
                     current_node = Node_word(is_horizontal, point)
                     length = 0
 
@@ -80,15 +82,65 @@ class Parser:
                     self.current_node_number += 1
                     current_node.length = length
                     nodes.append(current_node)
-                position = (0, x + 1)
+                position = (y + 1, 0)
 
-                if is_horizontal:
+                if not is_horizontal:
                     position = (position[1], position[0])
                 current_node = Node_word(is_horizontal, position)
                 length = 0
         except Exception:
             print("Can't parse geometry")
             exit(1)
+        # try:
+        #     length = 0
+        #     current_node = Node_word(is_horizontal, (0,0))
+        #     first = len(geometry[0])
+        #     second = len(geometry)
+        #
+        #     if is_horizontal:
+        #         first = len(geometry)
+        #         second = len(geometry[0])
+        #
+        #     for x in range(first):
+        #         for y in range(second):
+        #             position = (y, x)
+        #             if is_horizontal:
+        #                 position = (position[1], position[0])
+        #             letter = geometry[position[0]][position[1]]
+        #             if letter == "2":
+        #                 letter_index = length
+        #                 info = (letter_index, current_node)
+        #                 intersections[position].append(info)
+        #             if letter != "-":
+        #                 length += 1
+        #                 continue
+        #
+        #             if length > 1:
+        #                 current_node.number = self.current_node_number
+        #                 self.current_node_number += 1
+        #                 current_node.length = length
+        #                 nodes.append(current_node)
+        #             if is_horizontal:
+        #                 point = (y + 1, x)
+        #             else:
+        #                 point = (x, y + 1)
+        #             current_node = Node_word(is_horizontal, point)
+        #             length = 0
+        #
+        #         if length > 1:
+        #             current_node.number = self.current_node_number
+        #             self.current_node_number += 1
+        #             current_node.length = length
+        #             nodes.append(current_node)
+        #         position = (0, x + 1)
+        #
+        #         if is_horizontal:
+        #             position = (position[1], position[0])
+        #         current_node = Node_word(is_horizontal, position)
+        #         length = 0
+        # except Exception:
+        #     print("Can't parse geometry")
+        #     exit(1)
 
     def check_geometry(self, geometry):
         symbols = set()
@@ -101,4 +153,12 @@ class Parser:
 class ParseException(Exception):
     pass
 
+def main():
+    p = Parser()
+    # 'test_sources/3w_geometry.txt'
+    g = p.parse_from_txt('2w.txt')
+    gr = p.parse_to_graf(g)
+    print(gr.nodes)
 
+if __name__ == '__main__':
+    main()

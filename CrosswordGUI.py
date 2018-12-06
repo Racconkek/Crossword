@@ -30,7 +30,7 @@ class CrosswordApp(wx.Frame):
             height = int(self.height_value.GetValue())
             if width >= 100 or height >= 100:
                 raise Exception("Too big crossword")
-            cr = CrosswordEditor(None, "Geometry Creator", width, height)
+            cr = CrosswordEditor(self, "Geometry Creator", width, height)
         except Exception:
             dial = wx.MessageDialog(None, "Incorrect crossword size.\n", 'Exception', wx.OK)
             dial.ShowModal()
