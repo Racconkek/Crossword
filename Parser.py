@@ -1,3 +1,4 @@
+import copy
 from collections import defaultdict, namedtuple
 import sys
 from Graph import Crossword_graph
@@ -17,8 +18,32 @@ class Parser:
                 result.append(current)
         return result
 
+    def parse_from_gui(self, geometry):
+        result = copy.deepcopy(geometry)
+        for i in range(len(geometry)):
+            for j in range(len(geometry[0])):
+                if geometry[i][j] == '*':
+                    if j != len(geometry[0]) - 1 and geometry[i][j + 1] == '*':
+                        result[i][j] = '0'
+                    if j != 0 and geometry[i][j - 1] == '*':
+                        result[i][j] = '0'
 
-    def parse_to_graf(self, geometry):
+        for i in range(len(result[0])):
+            for j in range(len(result)):
+                if result[j][i] == '0':
+                    if j != 0 and result[j - 1][i] == '1':
+                        result[j][i] = '2'
+                    if j != len(geometry) - 1 and geometry[j + 1][i] == '*':
+                        result[j][i] = '2'
+                elif geometry[j][i] == '*':
+                    if j != 0 and geometry[j - 1][i] == '*':
+                        result[j][i] = '1'
+                    elif j!= len(geometry) - 1 and geometry[j + 1][i] == '*':
+                        result[j][i] = '1'
+        return result
+
+
+    def parse_to_graph(self, geometry):
         if geometry is None or len(geometry) == 0:
             raise ParseException("Current geometry not initialized or is empty")
         if not self.check_geometry(geometry):
@@ -91,56 +116,6 @@ class Parser:
         except Exception:
             print("Can't parse geometry")
             exit(1)
-        # try:
-        #     length = 0
-        #     current_node = Node_word(is_horizontal, (0,0))
-        #     first = len(geometry[0])
-        #     second = len(geometry)
-        #
-        #     if is_horizontal:
-        #         first = len(geometry)
-        #         second = len(geometry[0])
-        #
-        #     for x in range(first):
-        #         for y in range(second):
-        #             position = (y, x)
-        #             if is_horizontal:
-        #                 position = (position[1], position[0])
-        #             letter = geometry[position[0]][position[1]]
-        #             if letter == "2":
-        #                 letter_index = length
-        #                 info = (letter_index, current_node)
-        #                 intersections[position].append(info)
-        #             if letter != "-":
-        #                 length += 1
-        #                 continue
-        #
-        #             if length > 1:
-        #                 current_node.number = self.current_node_number
-        #                 self.current_node_number += 1
-        #                 current_node.length = length
-        #                 nodes.append(current_node)
-        #             if is_horizontal:
-        #                 point = (y + 1, x)
-        #             else:
-        #                 point = (x, y + 1)
-        #             current_node = Node_word(is_horizontal, point)
-        #             length = 0
-        #
-        #         if length > 1:
-        #             current_node.number = self.current_node_number
-        #             self.current_node_number += 1
-        #             current_node.length = length
-        #             nodes.append(current_node)
-        #         position = (0, x + 1)
-        #
-        #         if is_horizontal:
-        #             position = (position[1], position[0])
-        #         current_node = Node_word(is_horizontal, position)
-        #         length = 0
-        # except Exception:
-        #     print("Can't parse geometry")
-        #     exit(1)
 
     def check_geometry(self, geometry):
         symbols = set()
@@ -156,9 +131,11 @@ class ParseException(Exception):
 def main():
     p = Parser()
     # 'test_sources/3w_geometry.txt'
-    g = p.parse_from_txt('2w.txt')
-    gr = p.parse_to_graf(g)
-    print(gr.nodes)
+    # g = p.parse_from_txt('2w.txt')
+    # gr = p.parse_to_graph(g)
+    # print(gr.nodes)
+    r = p.parse_from_gui(p.parse_from_txt( 'test_sources/3wgui_format.txt'))
+    print(r)
 
 if __name__ == '__main__':
     main()

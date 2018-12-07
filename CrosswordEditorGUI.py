@@ -21,23 +21,28 @@ class CrosswordEditor(wx.Frame):
         menu_bar = wx.MenuBar()
         actions_menu = wx.Menu()
         help_menu = wx.Menu()
-        apply_item = actions_menu.Append(wx.ID_APPLY, 'Apply geometry', 'Saves created crossword geometry')
+        solution_menu = wx.Menu()
+        # apply_item = actions_menu.Append(wx.ID_APPLY, 'Apply geometry', 'Saves created crossword geometry')
         solve_item = actions_menu.Append(wx.ID_CONVERT, 'Solve', 'Makes crossword solution')
-        show_item = actions_menu.Append(wx.ID_PASTE, 'Show solution', 'Shows crossword solution')
+        show_in_cells_item = solution_menu.Append(wx.ID_PASTE, 'In cells', 'Shows crossword solution')
+        show_in_list_item = solution_menu.Append(wx.ID_PASTE, 'In list', 'Shows crossword solution')
         clear_item = actions_menu.Append(wx.ID_CLEAR, 'Clear board', 'Clears the board')
         choose_voc_item = actions_menu.Append(wx.ID_EDIT, 'Choose vocabulary', 'Chooses vocabulary')
         help_item = help_menu.Append(wx.ID_HELP, 'Help', 'Gives instructions')
         menu_bar.Append(actions_menu, '&Actions')
+        menu_bar.Append(solution_menu, '&Solutions')
         menu_bar.Append(help_menu, '&Help')
+
         self.SetMenuBar(menu_bar)
-        self.Bind(wx.EVT_MENU, self.save_geometry, apply_item)
+        # self.Bind(wx.EVT_MENU, self.save_geometry, apply_item)
         self.Bind(wx.EVT_MENU, self.get_help, help_item )
         self.Bind(wx.EVT_MENU, self.solve_cross, solve_item)
-        self.Bind(wx.EVT_MENU, self.show_solution, show_item)
+        self.Bind(wx.EVT_MENU, self.show_solution_in_cells, show_in_cells_item)
+        self.Bind(wx.EVT_BUTTON, self.show_solution_in_list, show_in_list_item)
         self.Bind(wx.EVT_MENU, self.clear_board,  clear_item)
         self.Bind(wx.EVT_MENU, self.choose_voc, choose_voc_item)
 
-    def save_geometry(self, event):
+    def save_geometry(self):
         values = []
         for i in range(len(self.buttons)):
             values.append([])
@@ -48,13 +53,11 @@ class CrosswordEditor(wx.Frame):
     def get_help(self, event):
         text = '''
         Push on buttons, where should be letters:
-            0 - for horizontal words
-            1 - for vertical words
-            2 - for intersections of words.
+            "-" - no letter
+            "*" - should be letter.
         Buttons:
-            Apply geometry - saves your current geometry
             Solve - Makes crossword solution
-            Show - Shows crossword solution
+            Show solution- Shows crossword solution
             Clear board - Clears the crossword board
             Choose vocabulary - Opens file explorer and let you choose the vocabulary file
             Help - Gives instructions
@@ -63,16 +66,22 @@ class CrosswordEditor(wx.Frame):
         dial.ShowModal()
 
     def solve_cross(self, event):
+        self.save_geometry()
         parser = Parser()
         try:
-            graph = parser.parse_to_graf(self.current_geom)
+            graph = parser.parse_to_graph(parser.parse_from_gui(self.current_geom))
             self.solution, self.coord_to_word = Crossword.make_solution(graph, self.vocabulary)
         except Exception as e:
             dial = wx.MessageDialog(None, "Incorrect geometry\n" + str(e), 'Exception', wx.OK)
             dial.ShowModal()
 
-    def show_solution(self, event):
+    def show_solution_in_cells(self, event):
         res = CrosswordResult(self, "Result", self.width, self.height, (self.solution, self.coord_to_word))
+
+    def show_solution_in_list(self, event):
+        
+        dial = wx.MessageDialog(None, "Incorrect geometry\n" , 'Solution', wx.OK)
+        dial.ShowModal()
 
     def clear_board(self, event):
         for i in range(len(self.buttons)):
@@ -108,9 +117,9 @@ class CrosswordEditor(wx.Frame):
         button = event.GetEventObject()
         label = button.GetLabel()
         if label == '-':
-            label = 0
+            label = '*'
         else:
-            label = (int(label) + 1) % 3
+            label = '-'
         button.SetLabel(str(label))
 
 
